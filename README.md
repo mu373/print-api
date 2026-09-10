@@ -1,6 +1,6 @@
 # print-api
 
-`print-api` is a small, authenticated HTTP API for submitting PDF documents to
+`print-api` is a small, authenticated HTTP API for printing PDF documents on
 configured CUPS printers. It exposes declared printer capabilities, print
 presets, CUPS printer status, and print-job status through OpenAPI 3.0.
 
