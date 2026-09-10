@@ -7,6 +7,15 @@ presets, CUPS printer status, and print-job status through OpenAPI 3.0.
 If you want to turn on/off the printer with SwitchBot buttons and Shelly
 smart-plugs, see [switch-api](https://github.com/mu373/switch-api).
 
+## Powered printer example
+
+[`scripts/print-with-power.sh`](scripts/print-with-power.sh) is an optional
+example for a printer controlled by `switch-api`. It powers the logical switch
+on, waits for the CUPS printer to be ready, prints one PDF, waits for the job to
+complete, and powers it off only after confirmed completion. Set the two API
+keys and any non-default service URLs or IDs through environment variables;
+the script documents them at its top.
+
 ## Features
 
 - Multiple configured CUPS destinations
