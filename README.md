@@ -4,6 +4,9 @@
 configured CUPS printers. It exposes declared printer capabilities, print
 presets, CUPS printer status, and print-job status through OpenAPI 3.0.
 
+If you want to turn on/off the printer with SwitchBot buttons and Shelly
+smart-plugs, see [switch-api](https://github.com/mu373/switch-api).
+
 ## Features
 
 - Multiple configured CUPS destinations
