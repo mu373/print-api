@@ -13,8 +13,7 @@ smart-plugs, see [switch-api](https://github.com/mu373/switch-api).
 example for a printer controlled by `switch-api`. It powers the logical switch
 on, waits for the CUPS printer to be ready, prints one PDF, waits for the job to
 complete, and powers it off only after confirmed completion. Set the two API
-keys and any non-default service URLs or IDs through environment variables;
-the script documents them at its top.
+keys and any non-default service URLs or IDs through environment variables.
 
 ## Features
 
