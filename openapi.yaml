@@ -1,0 +1,350 @@
+openapi: 3.0.3
+info:
+  title: Print API
+  version: 1.0.0
+  description: Submit PDF documents to one of the configured CUPS printers.
+servers:
+  - url: /
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      summary: Check whether the API process is healthy
+      security: []
+      responses:
+        "200":
+          description: The API is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /printers:
+    get:
+      operationId: listPrinters
+      summary: List configured printers and their declared capabilities
+      responses:
+        "200":
+          description: Configured printers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrinterList"
+  /presets:
+    get:
+      operationId: listPresets
+      summary: List configured print presets
+      responses:
+        "200":
+          description: Configured print presets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrintPresetList"
+  /printers/{printer_id}/status:
+    get:
+      operationId: getPrinterStatus
+      summary: Get the current CUPS state for a configured printer
+      parameters:
+        - $ref: "#/components/parameters/PrinterID"
+      responses:
+        "200":
+          description: Current printer state. unavailable means CUPS cannot currently resolve or use the destination.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrinterStatus"
+  /jobs/{job_id}:
+    get:
+      operationId: getPrintJob
+      summary: Get the current or terminal CUPS status of a print job
+      parameters:
+        - $ref: "#/components/parameters/JobID"
+      responses:
+        "200":
+          description: Current job state. unknown means CUPS has no current or retained terminal record for the ID.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrintJobState"
+  /print:
+    post:
+      operationId: printDocument
+      summary: Queue a PDF document for printing
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF document to print.
+                printer_id:
+                  type: string
+                  description: Configured printer ID. The default printer is used when omitted.
+                preset:
+                  type: string
+                  description: Configured print preset. Explicit request fields override preset values.
+                copies:
+                  type: integer
+                  minimum: 1
+                  maximum: 99
+                duplex:
+                  $ref: "#/components/schemas/DuplexMode"
+                color_mode:
+                  $ref: "#/components/schemas/ColorMode"
+                media:
+                  type: string
+                  description: Media name declared by the selected printer, such as a4 or letter.
+                scaling:
+                  $ref: "#/components/schemas/ScalingMode"
+                edge_to_edge:
+                  type: boolean
+                  description: >-
+                    Minimize driver-added margins. This does not imply scaling or physical full-bleed
+                    support; use scaling to control document resizing explicitly.
+      responses:
+        "202":
+          description: The job was accepted by CUPS.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrintJob"
+        "400":
+          description: Invalid request or unsupported print option.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: The uploaded document is too large.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: CUPS rejected the print job.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+  parameters:
+    PrinterID:
+      name: printer_id
+      in: path
+      required: true
+      schema:
+        type: string
+    JobID:
+      name: job_id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    HealthStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+    PrinterList:
+      type: object
+      required:
+        - printers
+      properties:
+        printers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Printer"
+    Printer:
+      type: object
+      required:
+        - id
+        - display_name
+        - default
+        - capabilities
+      properties:
+        id:
+          type: string
+        display_name:
+          type: string
+        default:
+          type: boolean
+        capabilities:
+          $ref: "#/components/schemas/PrinterCapabilities"
+    PrinterCapabilities:
+      type: object
+      required:
+        - color_modes
+        - duplex_modes
+        - media
+        - scaling_modes
+        - edge_to_edge
+        - max_copies
+      properties:
+        color_modes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColorMode"
+        duplex_modes:
+          type: array
+          items:
+            $ref: "#/components/schemas/DuplexMode"
+        media:
+          type: array
+          items:
+            type: string
+        scaling_modes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScalingMode"
+        edge_to_edge:
+          $ref: "#/components/schemas/EdgeToEdgeCapability"
+        max_copies:
+          type: integer
+          minimum: 1
+          maximum: 99
+    DuplexMode:
+      type: string
+      enum:
+        - none
+        - long-edge
+        - short-edge
+    ColorMode:
+      type: string
+      enum:
+        - auto
+        - color
+        - monochrome
+    ScalingMode:
+      type: string
+      description: >-
+        auto uses the printer default, none preserves physical document size, fit shows the whole
+        document, and fill covers the media while potentially cropping edges.
+      enum:
+        - auto
+        - auto-fit
+        - fill
+        - fit
+        - none
+    EdgeToEdgeCapability:
+      type: string
+      description: >-
+        printable-area minimizes driver-added margins but still respects the hardware unprintable
+        area; full-bleed means the printer and media support printing to the physical edge.
+      enum:
+        - unsupported
+        - printable-area
+        - full-bleed
+    PrintJob:
+      type: object
+      required:
+        - job_id
+        - printer_id
+        - status
+      properties:
+        job_id:
+          type: string
+        printer_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+    PrinterStatus:
+      type: object
+      required:
+        - printer_id
+        - status
+      properties:
+        printer_id:
+          type: string
+        status:
+          type: string
+          enum:
+            - ready
+            - busy
+            - unavailable
+            - unknown
+        message:
+          type: string
+    PrintJobState:
+      type: object
+      required:
+        - job_id
+        - status
+      properties:
+        job_id:
+          type: string
+        printer_id:
+          type: string
+          description: Configured printer ID when the job ID belongs to one.
+        status:
+          type: string
+          enum:
+            - queued
+            - processing
+            - completed
+            - canceled
+            - aborted
+            - unknown
+        message:
+          type: string
+    PrintPresetList:
+      type: object
+      required:
+        - presets
+      properties:
+        presets:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrintPreset"
+    PrintPreset:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+        printer_id:
+          type: string
+        copies:
+          type: integer
+          minimum: 1
+          maximum: 99
+        duplex:
+          $ref: "#/components/schemas/DuplexMode"
+        color_mode:
+          $ref: "#/components/schemas/ColorMode"
+        media:
+          type: string
+        scaling:
+          $ref: "#/components/schemas/ScalingMode"
+        edge_to_edge:
+          type: boolean
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+security:
+  - ApiKeyAuth: []

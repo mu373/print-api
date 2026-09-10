@@ -1,0 +1,48 @@
+{
+  "listen_addr": ":8000",
+  "max_upload_bytes": 33554432,
+  "default_printer_id": "office-mono",
+  "presets": [
+    {
+      "id": "letter-duplex-full",
+      "media": "letter",
+      "duplex": "long-edge",
+      "scaling": "none",
+      "edge_to_edge": true
+    }
+  ],
+  "printers": [
+    {
+      "id": "office-mono",
+      "display_name": "Office Brother HL-L2460DW",
+      "cups_destination": "brother",
+      "capabilities": {
+        "color_modes": ["auto", "monochrome"],
+        "duplex_modes": ["none", "long-edge", "short-edge"],
+        "media": ["a4", "letter", "legal"],
+        "scaling_modes": ["auto", "auto-fit", "fill", "fit", "none"],
+        "max_copies": 20,
+        "edge_to_edge": "printable-area"
+      },
+      "edge_to_edge_options": {
+        "page-left": "0",
+        "page-right": "0",
+        "page-top": "0",
+        "page-bottom": "0"
+      }
+    },
+    {
+      "id": "office-color",
+      "display_name": "Office Color Printer",
+      "cups_destination": "office-color",
+      "capabilities": {
+        "color_modes": ["auto", "color", "monochrome"],
+        "duplex_modes": ["none", "long-edge"],
+        "media": ["a4", "letter"],
+        "scaling_modes": ["auto", "auto-fit", "fill", "fit", "none"],
+        "max_copies": 20,
+        "edge_to_edge": "unsupported"
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+[Unit]
+Description=PDF print HTTP API
+After=network.target cups.service
+
+[Service]
+Type=simple
+User=print-api
+WorkingDirectory=/opt/print-api
+EnvironmentFile=/opt/print-api/.env
+Environment=PRINT_API_CONFIG=/opt/print-api/config.json
+ExecStart=/opt/print-api/print-api
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/tmp
+
+[Install]
+WantedBy=multi-user.target
