@@ -518,6 +518,39 @@ func (s *OptInt) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes PrinterStatusCupsStatus as json.
+func (o OptPrinterStatusCupsStatus) Encode(e *jx.Encoder) {
+	if !o.Set {
+		return
+	}
+	e.Str(string(o.Value))
+}
+
+// Decode decodes PrinterStatusCupsStatus from json.
+func (o *OptPrinterStatusCupsStatus) Decode(d *jx.Decoder) error {
+	if o == nil {
+		return errors.New("invalid: unable to decode OptPrinterStatusCupsStatus to nil")
+	}
+	o.Set = true
+	if err := o.Value.Decode(d); err != nil {
+		return err
+	}
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s OptPrinterStatusCupsStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *OptPrinterStatusCupsStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes ScalingMode as json.
 func (o OptScalingMode) Encode(e *jx.Encoder) {
 	if !o.Set {
@@ -1875,12 +1908,44 @@ func (s *PrinterStatus) encodeFields(e *jx.Encoder) {
 			s.Message.Encode(e)
 		}
 	}
+	{
+		if s.Responsive.Set {
+			e.FieldStart("responsive")
+			s.Responsive.Encode(e)
+		}
+	}
+	{
+		if s.QueuedJobs.Set {
+			e.FieldStart("queued_jobs")
+			s.QueuedJobs.Encode(e)
+		}
+	}
+	{
+		if s.Reasons != nil {
+			e.FieldStart("reasons")
+			e.ArrStart()
+			for _, elem := range s.Reasons {
+				e.Str(elem)
+			}
+			e.ArrEnd()
+		}
+	}
+	{
+		if s.CupsStatus.Set {
+			e.FieldStart("cups_status")
+			s.CupsStatus.Encode(e)
+		}
+	}
 }
 
-var jsonFieldsNameOfPrinterStatus = [3]string{
+var jsonFieldsNameOfPrinterStatus = [7]string{
 	0: "printer_id",
 	1: "status",
 	2: "message",
+	3: "responsive",
+	4: "queued_jobs",
+	5: "reasons",
+	6: "cups_status",
 }
 
 // Decode decodes PrinterStatus from json.
@@ -1923,6 +1988,55 @@ func (s *PrinterStatus) Decode(d *jx.Decoder) error {
 				return nil
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"message\"")
+			}
+		case "responsive":
+			if err := func() error {
+				s.Responsive.Reset()
+				if err := s.Responsive.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"responsive\"")
+			}
+		case "queued_jobs":
+			if err := func() error {
+				s.QueuedJobs.Reset()
+				if err := s.QueuedJobs.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"queued_jobs\"")
+			}
+		case "reasons":
+			if err := func() error {
+				s.Reasons = make([]string, 0)
+				if err := d.Arr(func(d *jx.Decoder) error {
+					var elem string
+					v, err := d.Str()
+					elem = string(v)
+					if err != nil {
+						return err
+					}
+					s.Reasons = append(s.Reasons, elem)
+					return nil
+				}); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"reasons\"")
+			}
+		case "cups_status":
+			if err := func() error {
+				s.CupsStatus.Reset()
+				if err := s.CupsStatus.Decode(d); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"cups_status\"")
 			}
 		default:
 			return d.Skip()
@@ -1980,6 +2094,50 @@ func (s *PrinterStatus) UnmarshalJSON(data []byte) error {
 	return s.Decode(d)
 }
 
+// Encode encodes PrinterStatusCupsStatus as json.
+func (s PrinterStatusCupsStatus) Encode(e *jx.Encoder) {
+	e.Str(string(s))
+}
+
+// Decode decodes PrinterStatusCupsStatus from json.
+func (s *PrinterStatusCupsStatus) Decode(d *jx.Decoder) error {
+	if s == nil {
+		return errors.New("invalid: unable to decode PrinterStatusCupsStatus to nil")
+	}
+	v, err := d.StrBytes()
+	if err != nil {
+		return err
+	}
+	// Try to use constant string.
+	switch PrinterStatusCupsStatus(v) {
+	case PrinterStatusCupsStatusReady:
+		*s = PrinterStatusCupsStatusReady
+	case PrinterStatusCupsStatusBusy:
+		*s = PrinterStatusCupsStatusBusy
+	case PrinterStatusCupsStatusUnavailable:
+		*s = PrinterStatusCupsStatusUnavailable
+	case PrinterStatusCupsStatusUnknown:
+		*s = PrinterStatusCupsStatusUnknown
+	default:
+		*s = PrinterStatusCupsStatus(v)
+	}
+
+	return nil
+}
+
+// MarshalJSON implements stdjson.Marshaler.
+func (s PrinterStatusCupsStatus) MarshalJSON() ([]byte, error) {
+	e := jx.Encoder{}
+	s.Encode(&e)
+	return e.Bytes(), nil
+}
+
+// UnmarshalJSON implements stdjson.Unmarshaler.
+func (s *PrinterStatusCupsStatus) UnmarshalJSON(data []byte) error {
+	d := jx.DecodeBytes(data)
+	return s.Decode(d)
+}
+
 // Encode encodes PrinterStatusStatus as json.
 func (s PrinterStatusStatus) Encode(e *jx.Encoder) {
 	e.Str(string(s))
@@ -2004,6 +2162,10 @@ func (s *PrinterStatusStatus) Decode(d *jx.Decoder) error {
 		*s = PrinterStatusStatusUnavailable
 	case PrinterStatusStatusUnknown:
 		*s = PrinterStatusStatusUnknown
+	case PrinterStatusStatusStarting:
+		*s = PrinterStatusStatusStarting
+	case PrinterStatusStatusError:
+		*s = PrinterStatusStatusError
 	default:
 		*s = PrinterStatusStatus(v)
 	}

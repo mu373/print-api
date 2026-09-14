@@ -601,10 +601,71 @@ func (s *PrinterStatus) Validate() error {
 			Error: err,
 		})
 	}
+	if err := func() error {
+		if value, ok := s.QueuedJobs.Get(); ok {
+			if err := func() error {
+				if err := (validate.Int{
+					MinSet:        true,
+					Min:           0,
+					MaxSet:        false,
+					Max:           0,
+					MinExclusive:  false,
+					MaxExclusive:  false,
+					MultipleOfSet: false,
+					MultipleOf:    0,
+					Pattern:       nil,
+				}).Validate(int64(value)); err != nil {
+					return errors.Wrap(err, "int")
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "queued_jobs",
+			Error: err,
+		})
+	}
+	if err := func() error {
+		if value, ok := s.CupsStatus.Get(); ok {
+			if err := func() error {
+				if err := value.Validate(); err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		failures = append(failures, validate.FieldError{
+			Name:  "cups_status",
+			Error: err,
+		})
+	}
 	if len(failures) > 0 {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s PrinterStatusCupsStatus) Validate() error {
+	switch s {
+	case "ready":
+		return nil
+	case "busy":
+		return nil
+	case "unavailable":
+		return nil
+	case "unknown":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }
 
 func (s PrinterStatusStatus) Validate() error {
@@ -616,6 +677,10 @@ func (s PrinterStatusStatus) Validate() error {
 	case "unavailable":
 		return nil
 	case "unknown":
+		return nil
+	case "starting":
+		return nil
+	case "error":
 		return nil
 	default:
 		return errors.Errorf("invalid value: %v", s)

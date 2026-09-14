@@ -2,7 +2,7 @@
 
 `print-api` is a small, authenticated HTTP API for printing PDF documents on
 configured CUPS printers. It exposes declared printer capabilities, print
-presets, CUPS printer status, and print-job status through OpenAPI 3.0.
+presets, direct IPP/CUPS printer readiness, and print-job status through OpenAPI 3.0.
 
 If you want to turn on/off the printer with SwitchBot buttons and Shelly
 smart-plugs, see [switch-api](https://github.com/mu373/switch-api).
@@ -22,6 +22,7 @@ keys and any non-default service URLs or IDs through environment variables.
 - Duplex, color, media, scaling, copies, and minimal-margin options
 - Reusable print presets
 - CUPS printer and job status endpoints
+- Optional read-only direct IPP readiness probing per printer
 - API-key authentication and embedded Swagger UI
 - Static Linux `amd64` builds with CGO disabled
 
@@ -48,6 +49,7 @@ Important fields:
 
 - `default_printer_id`: Printer used when `printer_id` is omitted.
 - `cups_destination`: CUPS destination passed to `lp -d`.
+- `ipp_uri`: Optional direct `ipp://` or `ipps://` endpoint for print readiness.
 - `presets`: Named print options that can be reused by callers.
 - `color_modes`: `auto`, `color`, or `monochrome`.
 - `duplex_modes`: `none`, `long-edge`, or `short-edge`.
@@ -63,6 +65,32 @@ full-bleed printing, and the printer's unprintable margins still apply.
 The included `letter-duplex-full` preset selects Letter paper, long-edge
 duplex, actual-size scaling, and minimal driver margins. It does not fix a
 printer or color mode. Explicit request fields override preset values.
+
+### Print readiness
+
+With `ipp_uri`, `GET /printers/{printer_id}/status` performs read-only
+Get-Printer-Attributes and combines actual printer state, job acceptance, and
+queue count with CUPS destination state. A responsive idle printer and enabled
+idle CUPS destination are required for `ready`. Either busy queue reports `busy`;
+stopped/not-accepting printers, invalid responses, and protocol errors report
+`error`. Connection refusal or timeout reports `starting`, even if CUPS is idle.
+Each direct probe has a five-second timeout and a bounded response size.
+
+Responses include `responsive`, `queued_jobs` (when available), `reasons`, and
+`cups_status`. An IPP fault can prove responsiveness without proving readiness.
+Without `ipp_uri`, legacy CUPS-only status remains supported, but `responsive`
+is omitted so power-managed clients can reject unverified readiness.
+
+The API never controls power or submits jobs during state reads. Printer MCP
+owns the power-on/print/completion/power-off workflow; Print API owns printer
+protocol and CUPS details. Switch API's separate IPP probe detects body power,
+not print readiness.
+
+Validate configuration without credentials or printer I/O:
+
+```bash
+PRINT_API_CONFIG=config.json ./dist/print-api -check-config
+```
 
 ## Authentication
 

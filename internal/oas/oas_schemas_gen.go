@@ -440,6 +440,52 @@ func (o OptInt) Or(d int) int {
 	return d
 }
 
+// NewOptPrinterStatusCupsStatus returns new OptPrinterStatusCupsStatus with value set to v.
+func NewOptPrinterStatusCupsStatus(v PrinterStatusCupsStatus) OptPrinterStatusCupsStatus {
+	return OptPrinterStatusCupsStatus{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptPrinterStatusCupsStatus is optional PrinterStatusCupsStatus.
+type OptPrinterStatusCupsStatus struct {
+	Value PrinterStatusCupsStatus
+	Set   bool
+}
+
+// IsSet returns true if OptPrinterStatusCupsStatus was set.
+func (o OptPrinterStatusCupsStatus) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptPrinterStatusCupsStatus) Reset() {
+	var v PrinterStatusCupsStatus
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptPrinterStatusCupsStatus) SetTo(v PrinterStatusCupsStatus) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptPrinterStatusCupsStatus) Get() (v PrinterStatusCupsStatus, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptPrinterStatusCupsStatus) Or(d PrinterStatusCupsStatus) PrinterStatusCupsStatus {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptScalingMode returns new OptScalingMode with value set to v.
 func NewOptScalingMode(v ScalingMode) OptScalingMode {
 	return OptScalingMode{
@@ -1088,6 +1134,13 @@ type PrinterStatus struct {
 	PrinterID string              `json:"printer_id"`
 	Status    PrinterStatusStatus `json:"status"`
 	Message   OptString           `json:"message"`
+	// Present when direct IPP probing is configured; confirms a valid IPP response, not print readiness.
+	Responsive OptBool `json:"responsive"`
+	// Direct printer IPP queue count; omitted if unavailable.
+	QueuedJobs OptInt   `json:"queued_jobs"`
+	Reasons    []string `json:"reasons"`
+	// CUPS destination state, independently of the direct printer probe.
+	CupsStatus OptPrinterStatusCupsStatus `json:"cups_status"`
 }
 
 // GetPrinterID returns the value of PrinterID.
@@ -1105,6 +1158,26 @@ func (s *PrinterStatus) GetMessage() OptString {
 	return s.Message
 }
 
+// GetResponsive returns the value of Responsive.
+func (s *PrinterStatus) GetResponsive() OptBool {
+	return s.Responsive
+}
+
+// GetQueuedJobs returns the value of QueuedJobs.
+func (s *PrinterStatus) GetQueuedJobs() OptInt {
+	return s.QueuedJobs
+}
+
+// GetReasons returns the value of Reasons.
+func (s *PrinterStatus) GetReasons() []string {
+	return s.Reasons
+}
+
+// GetCupsStatus returns the value of CupsStatus.
+func (s *PrinterStatus) GetCupsStatus() OptPrinterStatusCupsStatus {
+	return s.CupsStatus
+}
+
 // SetPrinterID sets the value of PrinterID.
 func (s *PrinterStatus) SetPrinterID(val string) {
 	s.PrinterID = val
@@ -1120,6 +1193,82 @@ func (s *PrinterStatus) SetMessage(val OptString) {
 	s.Message = val
 }
 
+// SetResponsive sets the value of Responsive.
+func (s *PrinterStatus) SetResponsive(val OptBool) {
+	s.Responsive = val
+}
+
+// SetQueuedJobs sets the value of QueuedJobs.
+func (s *PrinterStatus) SetQueuedJobs(val OptInt) {
+	s.QueuedJobs = val
+}
+
+// SetReasons sets the value of Reasons.
+func (s *PrinterStatus) SetReasons(val []string) {
+	s.Reasons = val
+}
+
+// SetCupsStatus sets the value of CupsStatus.
+func (s *PrinterStatus) SetCupsStatus(val OptPrinterStatusCupsStatus) {
+	s.CupsStatus = val
+}
+
+// CUPS destination state, independently of the direct printer probe.
+type PrinterStatusCupsStatus string
+
+const (
+	PrinterStatusCupsStatusReady       PrinterStatusCupsStatus = "ready"
+	PrinterStatusCupsStatusBusy        PrinterStatusCupsStatus = "busy"
+	PrinterStatusCupsStatusUnavailable PrinterStatusCupsStatus = "unavailable"
+	PrinterStatusCupsStatusUnknown     PrinterStatusCupsStatus = "unknown"
+)
+
+// AllValues returns all PrinterStatusCupsStatus values.
+func (PrinterStatusCupsStatus) AllValues() []PrinterStatusCupsStatus {
+	return []PrinterStatusCupsStatus{
+		PrinterStatusCupsStatusReady,
+		PrinterStatusCupsStatusBusy,
+		PrinterStatusCupsStatusUnavailable,
+		PrinterStatusCupsStatusUnknown,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s PrinterStatusCupsStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case PrinterStatusCupsStatusReady:
+		return []byte(s), nil
+	case PrinterStatusCupsStatusBusy:
+		return []byte(s), nil
+	case PrinterStatusCupsStatusUnavailable:
+		return []byte(s), nil
+	case PrinterStatusCupsStatusUnknown:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *PrinterStatusCupsStatus) UnmarshalText(data []byte) error {
+	switch PrinterStatusCupsStatus(data) {
+	case PrinterStatusCupsStatusReady:
+		*s = PrinterStatusCupsStatusReady
+		return nil
+	case PrinterStatusCupsStatusBusy:
+		*s = PrinterStatusCupsStatusBusy
+		return nil
+	case PrinterStatusCupsStatusUnavailable:
+		*s = PrinterStatusCupsStatusUnavailable
+		return nil
+	case PrinterStatusCupsStatusUnknown:
+		*s = PrinterStatusCupsStatusUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 type PrinterStatusStatus string
 
 const (
@@ -1127,6 +1276,8 @@ const (
 	PrinterStatusStatusBusy        PrinterStatusStatus = "busy"
 	PrinterStatusStatusUnavailable PrinterStatusStatus = "unavailable"
 	PrinterStatusStatusUnknown     PrinterStatusStatus = "unknown"
+	PrinterStatusStatusStarting    PrinterStatusStatus = "starting"
+	PrinterStatusStatusError       PrinterStatusStatus = "error"
 )
 
 // AllValues returns all PrinterStatusStatus values.
@@ -1136,6 +1287,8 @@ func (PrinterStatusStatus) AllValues() []PrinterStatusStatus {
 		PrinterStatusStatusBusy,
 		PrinterStatusStatusUnavailable,
 		PrinterStatusStatusUnknown,
+		PrinterStatusStatusStarting,
+		PrinterStatusStatusError,
 	}
 }
 
@@ -1149,6 +1302,10 @@ func (s PrinterStatusStatus) MarshalText() ([]byte, error) {
 	case PrinterStatusStatusUnavailable:
 		return []byte(s), nil
 	case PrinterStatusStatusUnknown:
+		return []byte(s), nil
+	case PrinterStatusStatusStarting:
+		return []byte(s), nil
+	case PrinterStatusStatusError:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1169,6 +1326,12 @@ func (s *PrinterStatusStatus) UnmarshalText(data []byte) error {
 		return nil
 	case PrinterStatusStatusUnknown:
 		*s = PrinterStatusStatusUnknown
+		return nil
+	case PrinterStatusStatusStarting:
+		*s = PrinterStatusStatusStarting
+		return nil
+	case PrinterStatusStatusError:
+		*s = PrinterStatusStatusError
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)

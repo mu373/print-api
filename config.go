@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -40,6 +41,7 @@ type printerConfig struct {
 	ID                string             `json:"id"`
 	DisplayName       string             `json:"display_name"`
 	CUPSDestination   string             `json:"cups_destination"`
+	IPPURI            string             `json:"ipp_uri,omitempty"`
 	Capabilities      capabilitiesConfig `json:"capabilities"`
 	EdgeToEdgeOptions map[string]string  `json:"edge_to_edge_options,omitempty"`
 }
@@ -169,6 +171,12 @@ func (p *printerConfig) validate() error {
 	}
 	if !idPattern.MatchString(p.CUPSDestination) {
 		return fmt.Errorf("invalid cups_destination %q", p.CUPSDestination)
+	}
+	if p.IPPURI != "" {
+		uri, err := url.Parse(p.IPPURI)
+		if err != nil || (uri.Scheme != "ipp" && uri.Scheme != "ipps") || uri.Host == "" || uri.User != nil || uri.RawQuery != "" || uri.Fragment != "" || len(p.IPPURI) > 32767 {
+			return fmt.Errorf("ipp_uri must be an absolute IPP URL without credentials, query, or fragment")
+		}
 	}
 	if err := p.Capabilities.validate(); err != nil {
 		return fmt.Errorf("capabilities: %w", err)

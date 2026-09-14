@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,6 +26,8 @@ const defaultConfigPath = "config.json"
 var openAPISpec []byte
 
 func main() {
+	checkConfig := flag.Bool("check-config", false, "validate configuration without credentials or printer I/O")
+	flag.Parse()
 	configPath := os.Getenv("PRINT_API_CONFIG")
 	if configPath == "" {
 		configPath = defaultConfigPath
@@ -33,6 +36,10 @@ func main() {
 	cfg, err := loadConfig(configPath)
 	if err != nil {
 		log.Fatalf("load config: %v", err)
+	}
+	if *checkConfig {
+		log.Printf("configuration valid: %d printer(s)", len(cfg.Printers))
+		return
 	}
 
 	apiKey := os.Getenv("PRINT_API_KEY")

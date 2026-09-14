@@ -26,12 +26,13 @@ type lpCommand func(context.Context, ...string) ([]byte, error)
 type lpstatCommand func(context.Context, ...string) ([]byte, error)
 
 type apiHandler struct {
-	config    config
-	apiKey    string
-	printers  map[string]printerConfig
-	presets   map[string]presetConfig
-	runLP     lpCommand
-	runLPStat lpstatCommand
+	config      config
+	apiKey      string
+	printers    map[string]printerConfig
+	presets     map[string]presetConfig
+	runLP       lpCommand
+	runLPStat   lpstatCommand
+	readPrinter printerProbe
 }
 
 func newAPIHandler(cfg config, apiKey string) *apiHandler {
@@ -44,12 +45,13 @@ func newAPIHandler(cfg config, apiKey string) *apiHandler {
 		presets[preset.ID] = preset
 	}
 	return &apiHandler{
-		config:    cfg,
-		apiKey:    apiKey,
-		printers:  printers,
-		presets:   presets,
-		runLP:     runLP,
-		runLPStat: runLPStat,
+		config:      cfg,
+		apiKey:      apiKey,
+		printers:    printers,
+		presets:     presets,
+		runLP:       runLP,
+		runLPStat:   runLPStat,
+		readPrinter: readPrinterState,
 	}
 }
 
@@ -141,20 +143,29 @@ func (h *apiHandler) GetPrinterStatus(ctx context.Context, params oas.GetPrinter
 	out, err := h.runLPStat(ctx, "-p", printer.CUPSDestination, "-l")
 	if err != nil {
 		log.Printf("lpstat failed for printer %q (%s): %v: %s", printer.ID, printer.CUPSDestination, err, strings.TrimSpace(string(out)))
-		return printerStatus(printer.ID, oas.PrinterStatusStatusUnavailable, "CUPS cannot currently use this printer destination"), nil
 	}
-
-	lower := strings.ToLower(string(out))
-	switch {
-	case strings.Contains(lower, "now printing"):
-		return printerStatus(printer.ID, oas.PrinterStatusStatusBusy, "CUPS is printing a job"), nil
-	case strings.Contains(lower, "is idle") && !strings.Contains(lower, "disabled"):
-		return printerStatus(printer.ID, oas.PrinterStatusStatusReady, "CUPS destination is enabled and idle"), nil
-	case strings.Contains(lower, "disabled") || strings.Contains(lower, "not accepting"):
-		return printerStatus(printer.ID, oas.PrinterStatusStatusUnavailable, "CUPS destination is disabled or not accepting jobs"), nil
-	default:
-		return printerStatus(printer.ID, oas.PrinterStatusStatusUnknown, "CUPS returned an unrecognized printer state"), nil
+	cups := classifyCUPSStatus(out, err)
+	result := printerStatus(printer.ID, oas.PrinterStatusStatus(cups), "CUPS destination state only; direct IPP probing is not configured")
+	result.CupsStatus = oas.NewOptPrinterStatusCupsStatus(oas.PrinterStatusCupsStatus(cups))
+	if printer.IPPURI == "" {
+		return result, nil
 	}
+	state, probeErr := h.readPrinter(ctx, printer.IPPURI)
+	result.Responsive = oas.NewOptBool(state.Responsive)
+	if probeErr != nil {
+		result.Status = oas.PrinterStatusStatusError
+		result.Reasons = []string{probeErr.Error()}
+		if errors.Is(probeErr, errPrinterUnreachable) {
+			result.Status = oas.PrinterStatusStatusStarting
+		}
+		result.Message = oas.NewOptString("Direct printer readiness could not be confirmed")
+		return result, nil
+	}
+	result.Status = oas.PrinterStatusStatus(classifyPrinterReadiness(state, cups))
+	result.QueuedJobs = oas.NewOptInt(state.QueuedJobs)
+	result.Reasons = state.Reasons
+	result.Message = oas.NewOptString("Combined direct IPP printer and CUPS destination state")
+	return result, nil
 }
 
 func (h *apiHandler) GetPrintJob(ctx context.Context, params oas.GetPrintJobParams) (*oas.PrintJobState, error) {

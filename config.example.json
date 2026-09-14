@@ -16,6 +16,7 @@
       "id": "office-mono",
       "display_name": "Office Brother HL-L2460DW",
       "cups_destination": "brother",
+      "ipp_uri": "ipp://192.168.1.60:631/ipp/print",
       "capabilities": {
         "color_modes": ["auto", "monochrome"],
         "duplex_modes": ["none", "long-edge", "short-edge"],
@@ -35,6 +36,7 @@
       "id": "office-color",
       "display_name": "Office Color Printer",
       "cups_destination": "office-color",
+      "ipp_uri": "ipp://192.168.1.61:631/ipp/print",
       "capabilities": {
         "color_modes": ["auto", "color", "monochrome"],
         "duplex_modes": ["none", "long-edge"],

@@ -280,8 +280,25 @@ components:
             - busy
             - unavailable
             - unknown
+            - starting
+            - error
         message:
           type: string
+        responsive:
+          type: boolean
+          description: Present when direct IPP probing is configured; confirms a valid IPP response, not print readiness.
+        queued_jobs:
+          type: integer
+          minimum: 0
+          description: Direct printer IPP queue count; omitted if unavailable.
+        reasons:
+          type: array
+          items:
+            type: string
+        cups_status:
+          type: string
+          enum: [ready, busy, unavailable, unknown]
+          description: CUPS destination state, independently of the direct printer probe.
     PrintJobState:
       type: object
       required:
